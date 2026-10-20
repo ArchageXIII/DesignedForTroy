@@ -1,0 +1,109 @@
+{
+  "sourceCommit": "722584bdd117e4d7c6f7e642a4857869078c183b",
+  "apiVersion": "v1",
+  "snapshots": [
+    "tools/troy-game-api-v1.js",
+    "bundle-policy.json"
+  ],
+  "selectedSources": [
+    {
+      "source": "client/public/developer/troy-api/v1/overview.md",
+      "path": "overview.md",
+      "sourceSha256": "14ccca60f1652358d0533e5733c58c3d58fa91acca66933e5ba84099274783f2"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/lifecycle.md",
+      "path": "lifecycle.md",
+      "sourceSha256": "7b61451adf150225b24e58c6f54d2dc2759dd2526a1a72b20c0ecd9913964904"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/storage.md",
+      "path": "storage.md",
+      "sourceSha256": "34c890045dd63da811ab6d528c9aa4927c241036332108ff100e0eae840fedf0"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/capture.md",
+      "path": "capture.md",
+      "sourceSha256": "4e99ba91c843bc3c551990879758139917790b67d8b6a4d3018aed2eac67db52"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/assets.md",
+      "path": "assets.md",
+      "sourceSha256": "34210ff2c48ecd15559939b459a5fe379da7771307215ce1af41e0aaa3c8a6ec"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/remixability.md",
+      "path": "remixability.md",
+      "sourceSha256": "8f024de58cd923d859589ac26ecec81bcb3798a824e5918d1918fb0270b7f33e"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/engines.md",
+      "path": "engines.md",
+      "sourceSha256": "5b33ec1f9940f1ae41cdf7cad45ad78d5eb3e35cf8660f7808082e5357ede48e"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/offline-dev.md",
+      "path": "offline-dev.md",
+      "sourceSha256": "7f188dd2ec4f7fcdb44122d30b5b3c6800ed1c7d153a26e959a44c9d24157901"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/testing.md",
+      "path": "testing.md",
+      "sourceSha256": "f2a4e31768ffa2e06713fc0e825618f33384f2be97c1dd22be512498659cf6ec"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/example/index.html",
+      "path": "game/index.html",
+      "sourceSha256": "9ac11d239e63ca55650c561e164616f000d1db85765452233fcec3b13cfc6d87"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/example/game.js",
+      "path": "game/game.js",
+      "sourceSha256": "59cf138eeeb1e833172fec425cf932a3c58cbef4535b279d977c7ad7b6439537"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/example/bonus-loader.js",
+      "path": "game/bonus-loader.js",
+      "sourceSha256": "df8a271eb4329d8294b9b3aa96e8ce21d4d15f4a5867eca5a725b5a63462d3a2"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/example/bonus-content.js",
+      "path": "game/bonus-content.js",
+      "sourceSha256": "b332c871c23455cf23296dcae6d5b8363da6fb16f882c66b3664f6d0e76a6e41"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/example/bonus-content.json",
+      "path": "game/bonus-content.json",
+      "sourceSha256": "3bba4828d11c9bffecc04f2911a102983eb347a822b47225ced5958b6172bfe2"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/example/README.md",
+      "path": "game/README.md",
+      "sourceSha256": "5104568b913181bb02beb5226859ed120714b1bd210db4b57fe69893de2425c1"
+    },
+    {
+      "source": "client/public/shared/troy-game-api-v1.js",
+      "path": "tools/troy-game-api-v1.js",
+      "sourceSha256": "2add232bb307d593dc5ddfd5dfcf75b3c9398a660c098fb95e71c256ab55a218"
+    },
+    {
+      "source": "functions/game-bundle-policy.json",
+      "path": "bundle-policy.json",
+      "sourceSha256": "97c8a0293182ce2d30c7ffbf2eae5be437c16d3e66035fea416014eb3e4102e7"
+    },
+    {
+      "source": "client/public/developer/troy-api/v1/troy-dev.mjs",
+      "path": "tools/troy-dev.mjs",
+      "sourceSha256": "a8d579268587a277a007ca6464f0ffa34301338ba0cb40f91d716d712f0d2141"
+    }
+  ],
+  "informedBy": [
+    "client/public/developer/index.html",
+    "functions/src/developer-mcp.js",
+    "scripts/build-troy-game-dev-kit.mjs",
+    "scripts/test-troy-game-api.mjs",
+    "scripts/test-starter-loading.mjs"
+  ],
+  "notes": "Only selected public toolkit content is included. Source repository availability is not required. Source hashes are Git blob bytes at sourceCommit, not platform-converted checkout bytes. Documentation and tools are adapted here; SDK and policy snapshots are byte-identical to the pinned commit.",
+  "sourceIdentity": "TROY private source repository (not required or publicly downloadable)"
+}

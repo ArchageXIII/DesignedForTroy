@@ -1,0 +1,11 @@
+{
+  "name": "designed-for-troy",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node scripts/test.mjs",
+    "build": "node scripts/build-kit.mjs",
+    "check": "node scripts/build-kit.mjs --check"
+  }
+}

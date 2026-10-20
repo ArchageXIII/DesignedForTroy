@@ -1,0 +1,4 @@
+* text=auto eol=lf
+tools/troy-game-api-v1.js -text
+bundle-policy.json -text
+*.zip binary

@@ -1,0 +1,30 @@
+name: Public toolkit
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node scripts/build-kit.mjs --check
+      - run: node scripts/test.mjs
+      - name: Extract with an independent ZIP reader
+        shell: pwsh
+        run: Expand-Archive -LiteralPath dist/troy-game-dev-kit-v1.zip -DestinationPath "${{ runner.temp }}/TROY kit with spaces"
+      - name: Verify extracted kit
+        shell: pwsh
+        run: |
+          Set-Location "${{ runner.temp }}/TROY kit with spaces/troy-game-dev-kit-v1"
+          node scripts/build-kit.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/build-kit.mjs --check
