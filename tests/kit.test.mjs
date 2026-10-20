@@ -113,6 +113,8 @@ test("harness HTTP strict policy, MIME, CSP, traversal and standalone serving", 
   await writeFile(join(folder, "game", "denied.exe"), "denied");
   await writeFile(join(folder, "game", "model.wasm"), "wasm");
   await writeFile(join(folder, "game", "test.svg"), "<svg/>");
+  await mkdir(join(folder, "game", "nested"));
+  await writeFile(join(folder, "game", "nested", "valid.json"), '{"valid":true}');
   await writeFile(join(folder, "game", "large.bin"), "");
   await truncate(join(folder, "game", "large.bin"), 52428800);
   await mkdir(join(folder, "outside"));
@@ -125,6 +127,7 @@ test("harness HTTP strict policy, MIME, CSP, traversal and standalone serving", 
   assert.equal((await fetch(strict + "/denied.exe")).status, 404);
   assert.equal((await fetch(strict + "/large.bin")).status, 413);
   assert.equal((await fetch(strict + "/escape/private.txt")).status, 403);
+  assert.deepEqual(await (await fetch(strict + "/nested/valid.json")).json(), { valid: true });
   assert.equal((await fetch(strict + "/model.wasm")).headers.get("content-type"), "application/wasm");
   assert.match((await fetch(strict + "/game.js")).headers.get("content-type"), /^application\/javascript/);
   assert.ok((await fetch(strict + "/test.svg")).headers.get("content-security-policy"));

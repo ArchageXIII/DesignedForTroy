@@ -60,7 +60,7 @@ export async function handleRequest(request) {
     })),
   });
   if (method === "tools/call") {
-    if (!Object.hasOwn(toolTopics, params.name ?? "")) return error(id, -32602, "Unknown TROY MCP tool.");
+    if (typeof params.name !== "string" || !Object.hasOwn(toolTopics, params.name)) return error(id, -32602, "Unknown TROY MCP tool.");
     const args = params.arguments;
     if (!object(args) || Object.keys(args).some(key => !["version", "topic"].includes(key))
       || (args.version !== undefined && args.version !== "v1") || !toolTopics[params.name].includes(args.topic)) {

@@ -150,8 +150,8 @@
     },
     {
       "path": "tests/kit.test.mjs",
-      "sizeBytes": 7767,
-      "sha256": "b706f94540b401060f347adb94dcf3ae3f1ebe4abe761856801e2fe4ab018a4a"
+      "sizeBytes": 7993,
+      "sha256": "24af35fd086401f9fb9f463ca055c6056c00e9ad7b25b9548279609475b2e2d3"
     },
     {
       "path": "tests/loading.test.mjs",
@@ -160,8 +160,8 @@
     },
     {
       "path": "tests/mcp.test.mjs",
-      "sizeBytes": 3547,
-      "sha256": "f3eea0ccf3e3c70ff52def1ab346682c1d203bfb42a31d07b33aff6da257d661"
+      "sizeBytes": 3727,
+      "sha256": "cb0e240e0c90d53ff561954226453def016bb4e30601a11f3d18d09104165b64"
     },
     {
       "path": "tests/sdk.test.mjs",
@@ -180,8 +180,8 @@
     },
     {
       "path": "tools/troy-mcp.mjs",
-      "sizeBytes": 5688,
-      "sha256": "5061ec87080faf3e99ac3d7166bf05746cf9f906996f623abf3081a25eed9ea2"
+      "sizeBytes": 5717,
+      "sha256": "80117aad516646e0264c3ce9f50643c32098a69bbe996bd0a9054a595ac3afac"
     }
   ]
 }

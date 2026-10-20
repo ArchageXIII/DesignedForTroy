@@ -38,6 +38,9 @@ test("MCP rejects invalid/private inputs and does not expose filesystem access",
     assert.equal((await call("resources/read", { uri })).error.code, -32602);
   }
   assert.equal((await call("tools/call", { name: "__proto__" })).error.code, -32602);
+  for (const name of [["get_troy_game_api_guide"], {}, null, 1]) {
+    assert.equal((await call("tools/call", { name, arguments: { topic: "overview" } })).error.code, -32602);
+  }
   assert.equal((await call("unknown")).error.code, -32601);
   for (const request of [null, [], {}, { jsonrpc: "2.0", method: "ping", id: {} }]) {
     assert.equal((await handleRequest(request)).error.code, -32600);
