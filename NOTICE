@@ -1,0 +1,9 @@
+DesignedForTroy
+Copyright (c) 2026 Magicave Holdings
+
+Selected public toolkit material originates from TROY revision
+722584bdd117e4d7c6f7e642a4857869078c183b. See provenance.json for file-level origins.
+No third-party library code or assets are bundled in this toolkit. The SDK,
+starter, guides and local tools are distributed under LICENSE. Engine names in
+the documentation identify integrations; no engine runtime is distributed here.
+Retain applicable third-party licenses when adding libraries or assets to a game.
