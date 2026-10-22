@@ -178,6 +178,7 @@
       }
 
       #quota-test,
+      #restore-state,
       #bonus-load,
       #api-test {
         grid-column: 1 / -1;
@@ -233,10 +234,11 @@
       </div>
 
       <div class="actions">
-        <button id="increment" type="button">Add score</button>
-        <button id="sound" type="button">Enable sound</button>
-        <button id="quota-test" type="button">Test the 64 KiB quota</button>
-        <button id="api-test" type="button">Run all API checks</button>
+        <button id="restore-state" type="button">Retry saved state</button>
+        <button id="increment" type="button" disabled>Add score</button>
+        <button id="sound" type="button" disabled>Enable sound</button>
+        <button id="quota-test" type="button" disabled>Test the 64 KiB quota</button>
+        <button id="api-test" type="button" disabled>Run all API checks</button>
         <button id="bonus-load" type="button" disabled>Load bonus content</button>
       </div>
 

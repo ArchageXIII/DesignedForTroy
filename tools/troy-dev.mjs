@@ -311,14 +311,29 @@ function controlPage(gameId, strictUpload, gameMountPath) {
           <button id="clear-log">Clear log</button>
         </div>
         <label style="margin-top:10px">
-          Storage response latency
+          Default storage response
           <select id="storage-latency">
             <option value="0">Immediate</option>
             <option value="500">500 ms</option>
             <option value="1500">1.5 seconds</option>
+            <option value="2500">2.5 seconds (past lifecycle deadline)</option>
+            <option value="reject">Reject request</option>
             <option value="never">Never resolve</option>
           </select>
         </label>
+        ${["load", "save", "clear"].map((operation) => `<label style="margin-top:10px">
+          ${operation[0].toUpperCase() + operation.slice(1)} response override
+          <select id="storage-${operation}">
+            <option value="inherit">Use default</option>
+            <option value="0">Immediate</option>
+            <option value="500">500 ms</option>
+            <option value="1500">1.5 seconds</option>
+            <option value="2500">2.5 seconds (past lifecycle deadline)</option>
+            <option value="reject">Reject request</option>
+            <option value="never">Never resolve</option>
+          </select>
+        </label>`).join("")}
+        <small>Each request keeps the setting selected when it starts. Restore the default or override to Immediate before retrying a pending or rejected operation.</small>
         <small>Capture splash requests intentionally leave the representative view visible for inspection. Use Reload / restore game to return to normal play.</small>
       </section>
       <section style="display:flex; min-height:0; flex:1; flex-direction:column">
@@ -346,6 +361,7 @@ function controlPage(gameId, strictUpload, gameMountPath) {
     const encoder = new TextEncoder();
     const lifecycleTimeoutMs = 2000;
     const pendingLifecycleAcks = new Map();
+    const recentLifecycleEvents = new Map();
     const pendingCaptureSplashes = new Map();
     let port = null;
     let lifecycleRetentionState = "legacy";
@@ -357,6 +373,10 @@ function controlPage(gameId, strictUpload, gameMountPath) {
     let latestEvent = null;
     let activationTimer = 0;
     let activePlayerId = "developer";
+    let storageRequestSequence = 0;
+    // Fault injection may settle requests out of order. A superseded write must
+    // never roll back a newer committed checkpoint or explicit clear.
+    const committedStorageWrites = new Map();
 
     document.querySelector("#game-id").textContent = gameId;
     strictModeNode.textContent = strictUpload ? "strict upload mode" : "ordinary mode";
@@ -389,8 +409,8 @@ function controlPage(gameId, strictUpload, gameMountPath) {
     }
 
     function clearPendingLifecycleAcks() {
-      for (const timeoutId of pendingLifecycleAcks.values()) {
-        window.clearTimeout(timeoutId);
+      for (const pending of pendingLifecycleAcks.values()) {
+        window.clearTimeout(pending.timeoutId);
       }
       pendingLifecycleAcks.clear();
     }
@@ -500,16 +520,20 @@ function controlPage(gameId, strictUpload, gameMountPath) {
 
       eventSequence += 1;
       const eventId = "dev-" + eventSequence;
+      const sentAt = performance.now();
+      recentLifecycleEvents.set(eventId, { sequence: event.sequence, sentAt });
+      if (recentLifecycleEvents.size > 100) recentLifecycleEvents.delete(recentLifecycleEvents.keys().next().value);
       const timeoutId = window.setTimeout(() => {
         pendingLifecycleAcks.delete(eventId);
+        log("lifecycle deadline exceeded", { eventId, sequence: event.sequence, elapsedMs: Math.round(performance.now() - sentAt) });
         faultLifecycle(
           "LIFECYCLE_TIMEOUT",
           "The game lifecycle handler did not finish within two seconds.",
         );
       }, lifecycleTimeoutMs);
-      pendingLifecycleAcks.set(eventId, timeoutId);
+      pendingLifecycleAcks.set(eventId, { timeoutId });
       port.postMessage({ kind: "lifecycle", eventId, event });
-      log("lifecycle sent", event);
+      log("lifecycle sent", { eventId, ...event });
     }
 
     window.addEventListener("error", (event) => {
@@ -578,20 +602,32 @@ function controlPage(gameId, strictUpload, gameMountPath) {
       }
     }
 
-    async function applyStorageLatency() {
-      if (storageLatencyNode.value === "never") {
+    async function applyStorageLatency(setting) {
+      if (setting === "reject") {
+        throw Object.assign(new Error("Simulated storage failure."), { code: "REQUEST_FAILED" });
+      }
+      if (setting === "never") {
         await new Promise(() => {});
         return;
       }
 
-      const latencyMs = Number(storageLatencyNode.value);
+      const latencyMs = Number(setting);
       if (latencyMs > 0) {
         await new Promise((resolveDelay) => window.setTimeout(resolveDelay, latencyMs));
       }
     }
 
     async function handleStorage(message) {
-      const respond = (ok, result, error) => port?.postMessage({
+      // Delayed work belongs to its original frame/player, even after a reload.
+      const requestPort = port;
+      const requestKey = storageKey();
+      const writeSequence = ++storageRequestSequence;
+      const override = ["load", "save", "clear"].includes(message.operation)
+        ? document.querySelector("#storage-" + message.operation).value : undefined;
+      const setting = !override || override === "inherit" ? storageLatencyNode.value : override;
+      const startedAt = performance.now();
+      log("storage requested", { requestId: message.requestId, operation: message.operation, response: setting });
+      const respond = (ok, result, error) => requestPort?.postMessage({
         kind: "storage-response",
         requestId: message.requestId,
         ok,
@@ -600,11 +636,11 @@ function controlPage(gameId, strictUpload, gameMountPath) {
       });
 
       try {
-        await applyStorageLatency();
+        await applyStorageLatency(setting);
         if (message.operation === "load") {
-          const payloadJson = localStorage.getItem(storageKey());
+          const payloadJson = localStorage.getItem(requestKey);
           respond(true, payloadJson === null ? {} : { payloadJson });
-          log("storage loaded", { found: payloadJson !== null });
+          log("storage loaded", { requestId: message.requestId, found: payloadJson !== null, elapsedMs: Math.round(performance.now() - startedAt) });
           return;
         }
         if (message.operation === "save" && typeof message.payloadJson === "string") {
@@ -613,21 +649,28 @@ function controlPage(gameId, strictUpload, gameMountPath) {
           if (sizeBytes > quotaBytes) {
             throw Object.assign(new Error("State exceeds the " + quotaBytes.toLocaleString() + "-byte limit."), { code: "QUOTA_EXCEEDED" });
           }
-          localStorage.setItem(storageKey(), message.payloadJson);
+          if (writeSequence > (committedStorageWrites.get(requestKey) ?? 0)) {
+            localStorage.setItem(requestKey, message.payloadJson);
+            committedStorageWrites.set(requestKey, writeSequence);
+          }
           updateQuota();
           respond(true, { persisted: true });
-          log("storage saved", { sizeBytes });
+          log("storage saved", { requestId: message.requestId, sizeBytes, elapsedMs: Math.round(performance.now() - startedAt) });
           return;
         }
         if (message.operation === "clear") {
-          localStorage.removeItem(storageKey());
+          if (writeSequence > (committedStorageWrites.get(requestKey) ?? 0)) {
+            localStorage.removeItem(requestKey);
+            committedStorageWrites.set(requestKey, writeSequence);
+          }
           updateQuota();
           respond(true, { persisted: true });
-          log("storage cleared");
+          log("storage cleared", { requestId: message.requestId, elapsedMs: Math.round(performance.now() - startedAt) });
           return;
         }
         throw Object.assign(new Error("Unsupported storage request."), { code: "INVALID_REQUEST" });
       } catch (error) {
+        log("storage rejected", { requestId: message.requestId, operation: message.operation, code: error?.code || "REQUEST_FAILED", elapsedMs: Math.round(performance.now() - startedAt) });
         respond(false, undefined, {
           code: error?.code || "REQUEST_FAILED",
           message: error?.message || "Storage request failed.",
@@ -713,20 +756,24 @@ function controlPage(gameId, strictUpload, gameMountPath) {
             sendLifecycle(desiredState, desiredSurface, "initial");
           }
         } else if (next?.kind === "lifecycle-ack") {
-          const timeoutId = pendingLifecycleAcks.get(next.eventId);
+          const pending = pendingLifecycleAcks.get(next.eventId);
+          const sent = recentLifecycleEvents.get(next.eventId);
 
-          if (timeoutId) {
-            window.clearTimeout(timeoutId);
+          if (pending) {
+            window.clearTimeout(pending.timeoutId);
             pendingLifecycleAcks.delete(next.eventId);
           }
 
           log("lifecycle acknowledged", {
             eventId: next.eventId,
+            sequence: sent?.sequence,
+            elapsedMs: sent ? Math.round(performance.now() - sent.sentAt) : undefined,
+            pending: Boolean(pending),
             ok: next.ok,
             error: next.error,
           });
 
-          if (timeoutId && next.ok !== true) {
+          if (pending && next.ok !== true) {
             faultLifecycle(
               next.error?.code || "LIFECYCLE_HANDLER_FAILED",
               next.error?.message || "The lifecycle handler rejected.",
@@ -780,7 +827,9 @@ function controlPage(gameId, strictUpload, gameMountPath) {
       );
     };
     document.querySelector("#clear").onclick = () => {
-      localStorage.removeItem(storageKey());
+      const key = storageKey();
+      localStorage.removeItem(key);
+      committedStorageWrites.set(key, ++storageRequestSequence);
       updateQuota();
       log("state cleared from control panel");
     };

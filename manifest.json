@@ -25,8 +25,8 @@
     },
     {
       "path": "AGENTS.md",
-      "sizeBytes": 2565,
-      "sha256": "59a0439a1ee7201b614e6a9c60d9804465dc9d41681495df42a7d17b41c574f7"
+      "sizeBytes": 3071,
+      "sha256": "6c694e2cd920c55b04bbf70c376d89c959ef4932e9ff1233c16baa4738a33d93"
     },
     {
       "path": "LICENSE",
@@ -70,8 +70,8 @@
     },
     {
       "path": "game/README.md",
-      "sizeBytes": 4898,
-      "sha256": "8bd04be26cd50b7d94f80e0a9f14b205379ae77c282904b2dc2da4099a37f93c"
+      "sizeBytes": 5801,
+      "sha256": "93ffba92bb6267a354d183a6d6906d6328bb988657361bc200bf58cb586ad72a"
     },
     {
       "path": "game/bonus-content.js",
@@ -90,23 +90,23 @@
     },
     {
       "path": "game/game.js",
-      "sizeBytes": 15049,
-      "sha256": "59cf138eeeb1e833172fec425cf932a3c58cbef4535b279d977c7ad7b6439537"
+      "sizeBytes": 16489,
+      "sha256": "50bc5e359a60f01e27a798fdfac07eed2148a7d1b740f92b0ba0882a339bb7f5"
     },
     {
       "path": "game/index.html",
-      "sizeBytes": 6107,
-      "sha256": "9ac11d239e63ca55650c561e164616f000d1db85765452233fcec3b13cfc6d87"
+      "sizeBytes": 6241,
+      "sha256": "c32235126a0f4cff031d570985c73b0d32be34ab5d340b142963a6ce0331d31c"
     },
     {
       "path": "lifecycle.md",
-      "sizeBytes": 8820,
-      "sha256": "06198c626b8e44c84b4acf1693725c01af63b13fbf55396bc41fc9c595cc88fa"
+      "sizeBytes": 10019,
+      "sha256": "eb92b381aa21b2352b2b1fde634de051101e0398bed851aba12764a04aaa4368"
     },
     {
       "path": "offline-dev.md",
-      "sizeBytes": 3664,
-      "sha256": "fd48f938b4c1677d5bce98ffe828bf17c7e002638bf9f3bf687f3d85da9bd0ad"
+      "sizeBytes": 3860,
+      "sha256": "18cb0baeea3d75acf1d4391d778c2dfc49b9f20d9f56be63cf7879ee3fb7b9ec"
     },
     {
       "path": "overview.md",
@@ -130,8 +130,8 @@
     },
     {
       "path": "scripts/build-kit.mjs",
-      "sizeBytes": 3976,
-      "sha256": "eb28baae06738afe3a29ea099833e5ee37580f442c42c3049ea31ab333d548d1"
+      "sizeBytes": 4047,
+      "sha256": "ec108769d75acaecf16cb4aa046d4f93740f76e9782fafd4496c4a000a39e9b2"
     },
     {
       "path": "scripts/test.mjs",
@@ -140,18 +140,28 @@
     },
     {
       "path": "storage.md",
-      "sizeBytes": 2335,
-      "sha256": "0409605357897dc93eb56c5163fec341b65e78ae5d88c91b72d022e199c67a4f"
+      "sizeBytes": 3532,
+      "sha256": "85a7efc646a26306c133db35c89229b3493d5f3e8de7ff558e7218dc2711c978"
     },
     {
       "path": "testing.md",
-      "sizeBytes": 11359,
-      "sha256": "eda81297b21a90a8e417fc0e9d6f60af83da52c4bf50b71cab90f9724641e5c9"
+      "sizeBytes": 14568,
+      "sha256": "331b949a0cc247df50a9dec650d324c3f225588ef6fde712977ba7ba97637efe"
+    },
+    {
+      "path": "tests/integration-fixture.mjs",
+      "sizeBytes": 7164,
+      "sha256": "9942db34a8a43bd75a42ae76ab6f69627bb806dd000c416e92001fbf1e58bd67"
     },
     {
       "path": "tests/kit.test.mjs",
       "sizeBytes": 7993,
       "sha256": "24af35fd086401f9fb9f463ca055c6056c00e9ad7b25b9548279609475b2e2d3"
+    },
+    {
+      "path": "tests/lifecycle-storage.test.mjs",
+      "sizeBytes": 9619,
+      "sha256": "e8ee70a7898dba8d7d4765d84331a277d3e5b63516f9d191cdd722e3011dc9f4"
     },
     {
       "path": "tests/loading.test.mjs",
@@ -170,8 +180,8 @@
     },
     {
       "path": "tools/troy-dev.mjs",
-      "sizeBytes": 34902,
-      "sha256": "82602a23df8418257a7bca9d7834c67a2653776dc12ef5cf9b14215b8e94041a"
+      "sizeBytes": 38383,
+      "sha256": "d14963a366e291111ac1f8c29fe04e3935e14393133771aaecc8fb4940ae2c25"
     },
     {
       "path": "tools/troy-game-api-v1.js",

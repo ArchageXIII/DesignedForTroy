@@ -52,9 +52,10 @@ Run these from `http://127.0.0.1:4173/__troy/`:
 16. **Abandoned frame:** choose **Discard pending frame**, send another active
     event, and confirm exactly one animation loop resumes instead of freezing
     or running at double speed.
-17. **Storage latency:** test 500 ms, 1.5 seconds, and never-resolving storage.
-    Inactive lifecycle must acknowledge promptly, and an abandoned save must
-    not prevent a later checkpoint attempt.
+17. **Storage faults:** run the [storage and startup fault matrix](#storage-and-startup-fault-matrix),
+    including a 2.5-second save, rejection and a never-resolving request. Confirm
+    each inactive acknowledgement arrives before delayed storage settles and
+    that an abandoned save does not prevent a later checkpoint attempt.
 18. **Engine adapter:** for compiled runtimes, repeat the engine-specific matrix
     in `engines.md`: retained recovery, discarded frame, presentation proof,
     context loss, capture-over-veil, trusted audio unlock, and exactly one
@@ -62,6 +63,49 @@ Run these from `http://127.0.0.1:4173/__troy/`:
 
 The browser console should have no unhandled rejection or missing-favicon
 noise.
+
+## Storage and startup fault matrix
+
+The local host retains **Default storage response** (Immediate, 500 ms,
+1.5 seconds, Never resolve) and adds **2.5 seconds** and **Reject request**.
+The Load, Save and Clear overrides select one operation independently; **Use
+default** inherits the default selector. Settings are captured when each request
+starts. Changing a setting does not release an already pending request; retry
+explicitly after selecting Immediate. The host lifecycle deadline stays **2000 ms**.
+
+1. Boot with immediate Load, add score, and select Save 500 ms, 1.5 seconds,
+   then 2.5 seconds in separate runs. Set off-screen and inspect the log: correlate
+   `lifecycle sent` and `lifecycle acknowledged` by `eventId` and `sequence`.
+   Record `elapsedMs`, successful ACK, stationary gameplay and managed retention.
+   The ACK must precede the matching `storage saved`, even when the save exceeds
+   two seconds. Storage logs identify the request, not its checkpoint contents.
+2. Repeat with Save **Reject request** and **Never resolve**. The game must catch
+   save failure, remain managed and resume in the same iframe without an unhandled
+   rejection. Switch Save to Immediate, activate, change score, then set off-screen:
+   a new save request must be attempted and succeed while the earlier request is
+   still pending. Restore the latest score in a fresh iframe.
+3. Save a known score first. Select Load **Never resolve**, then **Reload off-screen**.
+   Verify inactive ACK while Load is pending, no animation/audio, no new save,
+   and disabled gameplay controls. Select Load Immediate and use **Retry saved
+   state**: the saved score returns and the game stays inactive until Set active.
+4. Repeat initial active and inactive boot with Load **Reject request** and
+   **2.5 seconds**. Failure must offer explicit retry without overwriting stored
+   progress. If retry completes first, an older load's success or rejection must
+   not overwrite current progress or its status. A pending load must not block ACK.
+5. Request capture while Load is delayed. Let capture become ready, then let Load
+   finish: the representative capture stays visible and stationary. Reload with
+   immediate storage to verify that the actual saved score remains intact.
+6. Repeat using the default selector with each override set to **Use default**;
+   then prove an Immediate override works while the default is Never resolve.
+   Return all controls to Immediate/Use default before **Run all API checks**.
+
+`node scripts/test.mjs` executes the actual starter, bundled SDK and generated
+control-page script with deterministic DOM, message-port and timer fixtures.
+The regressions include a deliberately incorrect handler that returns a delayed
+save: it must fault at exactly 2000 ms, and a late ACK must not restore managed
+retention. This negative control ensures the test can detect the original mistake.
+These tests do not prove browser rendering, trusted gestures, uploaded persistence,
+or physical-device suspension; complete the Browser and uploaded checks separately.
 
 ## Uploaded-preview normal boot
 
