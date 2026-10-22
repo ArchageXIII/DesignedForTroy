@@ -44,6 +44,13 @@ failure as a recoverable gameplay condition. A lifecycle handler has two
 seconds to finish; returning or awaiting a slow storage request can fault that
 iframe's managed lifecycle.
 
+The returned promise includes indirect work: `return queueSave()` and
+`await persistCheckpoint()` also block acknowledgement when those helpers return
+a storage promise. `void save()` alone does not catch rejection; attach a catch
+inside the helper. Do not put later checkpoints behind an earlier pending save.
+The two-second deadline is a failure boundary, not a storage budget. Prove that
+the matching lifecycle acknowledgement arrives **before** a delayed save settles.
+
 ## Mobile lifecycle in retained iframes
 
 Mobile operating systems can suspend or discard work without delivering final
@@ -106,6 +113,16 @@ Initial lifecycle state can arrive before the engine is ready. Store the
 requested state independently, give callback dependencies safe defaults, and
 apply `desiredActive` after boot finishes. A warmed game can start inactive and
 must not briefly run simulation underneath another game.
+
+Register the subscriber before awaiting `troy.ready`, `storage.load()`, or engine
+startup, once its synchronous dependencies have safe defaults. Keep restoration
+readiness separate from `desiredActive`: acknowledge and pause immediately, but
+start neither simulation nor checkpoint saves until existing progress has been
+restored. Apply the latest lifecycle state after restoration, even when it is
+inactive. A failed or pending load must not silently become an empty checkpoint.
+Offer explicit retry and ignore completion from older attempts. The
+[starter](game/game.js) demonstrates this ordering, including capture during a
+pending restoration. See the [storage fault tests](testing.md#storage-and-startup-fault-matrix).
 
 ## Gesture and audio policy
 

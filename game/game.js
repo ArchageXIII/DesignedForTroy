@@ -15,6 +15,7 @@ const incrementButton = document.querySelector("#increment");
 const soundButton = document.querySelector("#sound");
 const quotaTestButton = document.querySelector("#quota-test");
 const apiTestButton = document.querySelector("#api-test");
+const restoreButton = document.querySelector("#restore-state");
 
 let score = 0;
 let frameCount = 0;
@@ -23,12 +24,15 @@ let animationGeneration = 0;
 let animationStartedAt = performance.now();
 let audioContext;
 let audioEnabled = false;
-let desiredActive = true;
+let desiredActive = false;
+let stateRestored = false;
+let restoreAttempt = 0;
+let saveAttempt = 0;
 
 const bonusButton = document.querySelector("#bonus-load");
 const bonusStatus = document.querySelector("#bonus-status");
 const bonus = createBonusLoader({
-  isActive: () => desiredActive && !document.hidden && document.body.dataset.captureSplash !== "true",
+  isActive: () => stateRestored && desiredActive && !document.hidden && document.body.dataset.captureSplash !== "true",
   onState: ({ status, message }) => {
     bonusStatus.textContent = message;
     bonusButton.disabled = status === "loading" || status === "ready";
@@ -38,11 +42,12 @@ const bonus = createBonusLoader({
 bonusButton.addEventListener("click", () => { void bonus.load(); });
 
 function renderScore() {
+  if (document.body.dataset.captureSplash === "true") return;
   scoreNode.textContent = String(score);
 }
 
 function animate(now, generation) {
-  if (!desiredActive || generation !== animationGeneration) {
+  if (!stateRestored || !desiredActive || generation !== animationGeneration) {
     return;
   }
 
@@ -59,6 +64,7 @@ function animate(now, generation) {
 }
 
 function resumeAnimation() {
+  if (!stateRestored || !desiredActive || document.body.dataset.captureSplash === "true") return;
   cancelAnimationFrame(animationFrame);
   animationFrame = 0;
   animationGeneration += 1;
@@ -124,13 +130,17 @@ function captureSnapshot() {
 }
 
 function queueSnapshotSave(snapshot) {
+  if (!stateRestored) return;
+  const attempt = ++saveAttempt;
   void troy.storage.save(snapshot)
     .then((result) => {
+      if (attempt !== saveAttempt) return;
       saveStatusNode.textContent = result.persisted
         ? `Saved score ${snapshot.score}.`
         : "Host unavailable; state was not persisted.";
     })
     .catch((error) => {
+      if (attempt !== saveAttempt) return;
       saveStatusNode.textContent = `${error.code ?? "SAVE_FAILED"}: ${error.message}`;
     });
 }
@@ -154,32 +164,81 @@ function restoreCaptureSplashRegistration() {
 
 void unregisterCaptureSplash;
 
+// Register before either ready or restoration can wait. Lifecycle acknowledgements
+// only depend on the synchronous pause/input work, never on storage completion.
+const unsubscribeLifecycle = troy.lifecycle.subscribe((event) => {
+  lifecycleNode.textContent = event.state;
+  surfaceNode.textContent = `${event.surface} / ${event.reason}`;
+  desiredActive = event.state === "active";
+  resetTransientInput();
+
+  if (desiredActive) {
+    refreshLayout();
+    resumeAnimation();
+    void resumeAudio().catch(() => {});
+    return;
+  }
+
+  pauseAnimation();
+  bonus.cancel();
+  void pauseAudio().catch(() => {});
+  if (stateRestored) queueSnapshotSave(captureSnapshot());
+});
+
+void unsubscribeLifecycle;
+
+window.addEventListener("blur", resetTransientInput);
+window.addEventListener("pageshow", () => {
+  if (desiredActive) {
+    refreshLayout();
+    resumeAnimation();
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    bonus.cancel();
+    resetTransientInput();
+  } else if (desiredActive) {
+    refreshLayout();
+    resumeAnimation();
+  }
+});
+
 const connection = await troy.ready;
-desiredActive = !connection.available;
+if (!connection.available) desiredActive = true;
 connectionNode.textContent = connection.available
   ? `${connection.mode} / available`
   : "standalone / unavailable";
 
-try {
-  const saved = await troy.storage.load();
-
-  if (
-    saved &&
-    typeof saved === "object" &&
-    saved.schemaVersion === 1 &&
-    typeof saved.score === "number"
-  ) {
-    score = saved.score;
+async function restoreSavedState() {
+  const attempt = ++restoreAttempt;
+  saveStatusNode.textContent = "Restoring saved state… Retry if the request stalls.";
+  try {
+    const saved = await troy.storage.load();
+    if (attempt !== restoreAttempt) return;
+    if (saved !== undefined && (
+      !saved || typeof saved !== "object" || saved.schemaVersion !== 1 ||
+      !Number.isFinite(saved.score)
+    )) throw new Error("Saved state needs a supported migration before play.");
+    score = saved?.score ?? 0;
     renderScore();
-    saveStatusNode.textContent = `Restored score ${score}.`;
+    stateRestored = true;
+    saveStatusNode.textContent = saved === undefined ? "Ready for a new game." : `Restored score ${score}.`;
+    restoreButton.hidden = true;
+    for (const button of [incrementButton, soundButton, quotaTestButton, apiTestButton, bonusButton]) button.disabled = false;
+    // Use the latest lifecycle state, which may have changed while loading.
+    resumeAnimation();
+  } catch (error) {
+    if (attempt !== restoreAttempt) return;
+    saveStatusNode.textContent = `${error.code ?? "LOAD_FAILED"}: ${error.message} Retry saved state to continue.`;
   }
-} catch (error) {
-  saveStatusNode.textContent = `${error.code ?? "LOAD_FAILED"}: ${error.message}`;
 }
 
-// Optional content cannot start before the core saved state has been restored.
-bonusButton.disabled = false;
+restoreButton.addEventListener("click", () => { void restoreSavedState(); });
+void restoreSavedState();
+
 incrementButton.addEventListener("click", () => {
+  if (!stateRestored || !desiredActive) return;
   score += 1;
   renderScore();
   playTapSound();
@@ -429,44 +488,6 @@ apiTestButton.addEventListener("click", async () => {
 
     apiTestButton.disabled = false;
     quotaTestButton.disabled = false;
-  }
-});
-
-const unsubscribeLifecycle = troy.lifecycle.subscribe((event) => {
-  lifecycleNode.textContent = event.state;
-  surfaceNode.textContent = `${event.surface} / ${event.reason}`;
-  desiredActive = event.state === "active";
-  resetTransientInput();
-
-  if (desiredActive) {
-    refreshLayout();
-    resumeAnimation();
-    void resumeAudio().catch(() => {});
-    return;
-  }
-
-  pauseAnimation();
-  bonus.cancel();
-  void pauseAudio().catch(() => {});
-  queueSnapshotSave(captureSnapshot());
-});
-
-void unsubscribeLifecycle;
-
-window.addEventListener("blur", resetTransientInput);
-window.addEventListener("pageshow", () => {
-  if (desiredActive) {
-    refreshLayout();
-    resumeAnimation();
-  }
-});
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    bonus.cancel();
-    resetTransientInput();
-  } else if (desiredActive) {
-    refreshLayout();
-    resumeAnimation();
   }
 });
 

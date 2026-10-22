@@ -13,6 +13,7 @@ export const payloadFiles = [
   "tools/troy-game-api-v1.js", "tools/troy-mcp.mjs", "scripts/build-kit.mjs",
   "scripts/test.mjs", "tests/sdk.test.mjs", "tests/loading.test.mjs",
   "tests/mcp.test.mjs", "tests/kit.test.mjs",
+  "tests/lifecycle-storage.test.mjs", "tests/integration-fixture.mjs",
 ].sort();
 export const sha256 = data => createHash("sha256").update(data).digest("hex");
 export function crc32(data) {

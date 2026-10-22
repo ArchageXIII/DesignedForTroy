@@ -18,8 +18,11 @@ node tools/troy-dev.mjs game --strict-upload
 ```
 
 Strict mode applies the accepted extension policy, production MIME mapping,
-and uploaded-document CSP. It also enables controls for storage latency and
-discarding pending animation frames without clearing the game's stored handle.
+and uploaded-document CSP. Both modes provide per-operation storage delay,
+rejection and pending-request controls, plus discarded animation frames without
+clearing the game's stored handle. Follow the
+[storage fault matrix](testing.md#storage-and-startup-fault-matrix) and record
+matching lifecycle event IDs, sequences and acknowledgement durations.
 Use **Preview orientation** to switch the retained iframe between portrait and
 landscape dimensions. This tests responsive behavior only; choose the matching
 Best played metadata separately when uploading.

@@ -85,6 +85,21 @@ The full reference is also included at the top of the extracted kit:
 - [Offline development](../offline-dev.md)
 - [Testing checklist](../testing.md)
 
+## Restore and save without blocking lifecycle
+
+The starter registers lifecycle before waiting for its saved score. During a
+pending or failed load, it acknowledges inactive immediately, keeps gameplay
+paused and avoids saving default progress. **Retry saved state** starts an explicit
+new restoration attempt; an older result cannot replace newer restored state.
+Play controls become available only after a successful, supported snapshot or
+successful empty load. Capture remains available while restoration is pending.
+
+Use the host's per-operation storage overrides to test 2.5-second, rejected and
+never-resolving saves independently of initial Load. Inactive saves are caught
+and detached; another checkpoint can be attempted even if the previous one never
+settles. Follow the [fault matrix](../testing.md#storage-and-startup-fault-matrix)
+and compare matching ACK timing with storage completion.
+
 ## Load optional content without delaying play
 
 The initial game imports the tiny `bonus-loader.js` coordinator. **Load bonus

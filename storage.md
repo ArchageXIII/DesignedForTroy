@@ -45,6 +45,26 @@ or interrupted network can abandon a request. Let TROY serialize saves, keep
 the newest complete checkpoint available, and treat save errors as recoverable
 gameplay errors rather than lifecycle errors.
 
+An async helper can still block lifecycle indirectly if the subscriber returns
+or awaits it. Keep pause and snapshot capture synchronous, detach the caught
+request, and make a later complete checkpoint attempt independently of any
+abandoned request. Do not increase the lifecycle deadline to accommodate saving.
+
+## Restore before writing
+
+Register lifecycle handling before waiting for the initial load. Keep gameplay
+and saving gated until restoration succeeds (including a successful empty result).
+A load error or arbitrary short timeout does not prove that no saved game exists.
+Show a recoverable state with explicit retry instead of writing defaults over it.
+Validate or migrate the saved schema before enabling play; do not silently discard
+an unsupported snapshot. Guard retries with an attempt identifier so an older
+success or rejection cannot overwrite the newer state or error message.
+
+Capture may be requested while restoration is pending. Keep its representative
+presentation separate from restored progress, and do not restart animation or
+replace capture artwork when a late load completes. Test these cases with the
+[fault matrix](testing.md#storage-and-startup-fault-matrix).
+
 Transient state does not belong in the checkpoint. Never restore active
 pointers, held controls, animation-frame handles, audio-context state,
 timestamps, accumulated frame delta, or viewport-specific layout values.
