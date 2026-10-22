@@ -38,5 +38,13 @@ When required tooling fails, pause dependent work, diagnose the cause, and repor
 the exact failure. Continue independent work. Do not bypass tools, browser or
 permissions without explicit user agreement.
 
+GitHub CLI (`gh`) is an approved approach for authorized GitHub operations,
+including PR creation when the GitHub plugin is unavailable or lacks integration
+permissions. Diagnose and report the plugin failure, verify the CLI account and
+target repository, then continue through `gh` without requesting approval again.
+Keep the plugin limitation visible; CLI success does not repair its permissions.
+This exception does not authorize new access, merges, deployments, or switching
+tools for other failures.
+
 Use a `codex/` branch and a reviewable PR. Never merge/fast-forward main or deploy
 without the user's explicit instruction for that action. Report commits, tests, evidence and limitations.
