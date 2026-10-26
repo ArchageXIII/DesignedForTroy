@@ -193,19 +193,23 @@ line, and column the browser provides. Errors sourced from `troy-dev.mjs`,
 `/__troy/`, `/shared/troy-game-api-v1.js`, or a game file belong to the kit or
 game and should be investigated.
 
-Some extensions, accessibility tools, and browser automation inject scripts
-into the page. Their errors may appear only in DevTools with a blank source,
-an extension URL, or `unknown or injected source`. They are outside the game
-bundle. If an error appears only on the control page and has no source:
+Extensions, accessibility tools and browser automation can inject scripts with
+a blank source, an extension URL or `unknown or injected source`. A missing URL
+or isolated execution context does not establish that an error is harmless.
+Use the approved Browser's supported diagnostics to correlate the exception's
+script and execution context; inspect a bounded source/stack excerpt if available.
+Keep private tooling source and application logs outside the public repository.
 
-1. confirm it is absent from the directly opened game;
-2. retry in a clean browser profile or private window with extensions disabled;
-3. report it as a kit issue only if a local source URL is shown or it reproduces
-   in that clean session.
-
-The runner and SDK do not use `MutationObserver`. A source-less
-`MutationObserver.observe` error that disappears in a clean session is
-injected browser tooling, not a TROY runtime error.
+Compare the directly opened game, a minimal page without scripts, and a minimal
+iframe page. Separate navigation/initialization from later observations and
+interactions. Check input, rendering, lifecycle and affected Browser features;
+record which behavior still works and which remains unverified. A deliberate
+error in a disposable game fixture can verify that genuine page errors still
+reach the iframe console and harness log. Do not suppress errors or change
+browser/security settings to obtain a clean console. Follow the tooling-failure
+policy in [AGENTS.md](AGENTS.md); preserve unresolved ownership or impact when
+the evidence is insufficient. The runner and SDK do not use `MutationObserver`,
+but that fact alone cannot attribute every observer error or validate gameplay.
 
 ## Automatic capture acceptance
 

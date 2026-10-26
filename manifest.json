@@ -25,8 +25,8 @@
     },
     {
       "path": "AGENTS.md",
-      "sizeBytes": 3624,
-      "sha256": "9f135be02dc3f8c7e6d989b8ddca49b4ede5ecd0abed5701fdc4ed064dc149c8"
+      "sizeBytes": 3849,
+      "sha256": "2c9a26bd85e797eca798597fe06e0e0973cafc786d669ae28ba9e373141eb7e3"
     },
     {
       "path": "LICENSE",
@@ -45,8 +45,8 @@
     },
     {
       "path": "UPDATING.md",
-      "sizeBytes": 3002,
-      "sha256": "0494bc4ffd5a5cbb622445318422aa36fdac6d248f1c1768d743e8d54a69a4da"
+      "sizeBytes": 3241,
+      "sha256": "23db3fed07f1e72336dd2888de57a7420c6fd69921a20cb837af8a313e50e482"
     },
     {
       "path": "assets.md",
@@ -145,8 +145,8 @@
     },
     {
       "path": "testing.md",
-      "sizeBytes": 17299,
-      "sha256": "d20ae5abf5f72535eb9e1cc5e9bca2f8602058af93d060c8b5e2c44f82d933f3"
+      "sizeBytes": 17826,
+      "sha256": "7c09dbdb8df8a9c0d5cc26f82a5f2a2be0e698b5511d6bd150f42a40d9c56714"
     },
     {
       "path": "tests/containment.test.mjs",
