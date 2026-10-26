@@ -12,6 +12,11 @@ new games, replacement versions, and remixes, whether built by humans or agents.
 Importing the SDK alone is insufficient. Existing published games remain compatible
 until replacement.
 
+Games must remain in TROY's supplied viewport with host navigation available.
+Follow the [embedded-play contract](assets.md#embedded-play-contract): no browser
+fullscreen, permission bypasses, pointer/orientation locks or uploaded-game
+browser downloads. Responsive layout and declared orientation keep play embedded.
+
 ## Start playing
 
 Use Node.js 22 or newer. Clone this repository or extract the checked-in

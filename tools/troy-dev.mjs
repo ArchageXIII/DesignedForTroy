@@ -266,11 +266,12 @@ function controlPage(gameId, strictUpload, gameMountPath) {
 </head>
 <body>
   <main>
-    <div class="phone"><iframe id="game" title="Local TROY game"></iframe></div>
+    <div class="phone"><iframe id="game" title="Local TROY game" sandbox="allow-scripts allow-same-origin" allow="accelerometer; gyroscope; fullscreen 'none'"></iframe></div>
     <aside>
       <section>
         <h1>TROY API v1 local host</h1>
         <p>Static game <strong id="game-id"></strong>. Storage is local to this browser.</p>
+        <p>Embedded play: fullscreen denied; host controls stay available. <a href="/__troy/containment/" target="_blank" rel="noreferrer">Open containment probe</a> in a separate test tab.</p>
         <p><a href="/" target="_blank" rel="noreferrer">Open the game directly</a> to test top-level unavailable mode.</p>
         <div class="status">
           <span class="pill" id="connection">Waiting for SDK</span>
@@ -898,6 +899,9 @@ const sdkPath = await chooseSdkPath();
 const bundlePolicy = await loadBundlePolicy();
 
 const server = createServer(async (request, response) => {
+  // The ancestor document must deny fullscreen too: a same-origin child can
+  // otherwise invoke an ancestor's API or change its own iframe permissions.
+  response.setHeader("Permissions-Policy", "fullscreen=()");
   try {
     const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host}`);
 
@@ -915,8 +919,10 @@ const server = createServer(async (request, response) => {
       return;
     }
 
-    if (requestUrl.pathname === "/__troy" || requestUrl.pathname === "/__troy/") {
-      const body = controlPage(options.gameId, options.strictUpload, options.gameMountPath);
+    if (["/__troy", "/__troy/", "/__troy/containment/"].includes(requestUrl.pathname)) {
+      const probe = requestUrl.pathname === "/__troy/containment/";
+      const body = controlPage(probe ? "containment-probe" : options.gameId, options.strictUpload,
+        probe ? "/__troy/containment" : options.gameMountPath);
       response.writeHead(200, {
         "Cache-Control": "no-store",
         "Content-Type": "text/html; charset=utf-8",
@@ -929,6 +935,9 @@ const server = createServer(async (request, response) => {
 
     if (requestUrl.pathname === `/shared/${sdkFileName}`) {
       filePath = sdkPath;
+    } else if (requestUrl.pathname === "/__troy/containment/index.html") {
+      // Explicit public fixture route; never accept an arbitrary tools path.
+      filePath = join(scriptDirectory, "containment.html");
     } else {
       const gameMountPath = options.gameMountPath;
       if (gameMountPath && requestUrl.pathname !== gameMountPath && !requestUrl.pathname.startsWith(gameMountPath + "/")) {

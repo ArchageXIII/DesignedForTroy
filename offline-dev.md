@@ -18,7 +18,10 @@ node tools/troy-dev.mjs game --strict-upload
 ```
 
 Strict mode applies the accepted extension policy, production MIME mapping,
-and uploaded-document CSP. Both modes provide per-operation storage delay,
+and uploaded-document CSP. Both modes deny fullscreen on parent and game
+responses, sandbox the game iframe with only scripts/same-origin grants, and
+retain accelerometer/gyroscope permission declarations. Ordinary mode still
+does not add the uploaded-document CSP or file filtering. Both modes provide per-operation storage delay,
 rejection and pending-request controls, plus discarded animation frames without
 clearing the game's stored handle. Follow the
 [storage fault matrix](testing.md#storage-and-startup-fault-matrix) and record
@@ -28,6 +31,11 @@ landscape dimensions. This tests responsive behavior only; choose the matching
 Best played metadata separately when uploading.
 
 Open `http://127.0.0.1:4173/__troy/`.
+
+Use **Open containment probe** for a separate, explicit test frame. Its calls
+are intentionally forbidden examples, not starter code. Nothing reloads active
+gameplay automatically. Follow [containment acceptance](testing.md#embedded-play-containment);
+an inconclusive result is not a pass, and local proof is not deployment evidence.
 
 The kit contains separate `game/` and `tools/` folders plus `overview.md`,
 `lifecycle.md`, `storage.md`, `capture.md`, `assets.md`, `engines.md`,
@@ -61,6 +69,7 @@ Place these files together in a tools folder:
 
 - `troy-dev.mjs`
 - `troy-game-api-v1.js`
+- `containment.html` (development-only probe; do not upload with the game)
 - `bundle-policy.json`
 
 Then run the host from that folder with a relative or absolute path to a game

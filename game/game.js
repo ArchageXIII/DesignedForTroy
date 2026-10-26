@@ -16,6 +16,10 @@ const soundButton = document.querySelector("#sound");
 const quotaTestButton = document.querySelector("#quota-test");
 const apiTestButton = document.querySelector("#api-test");
 const restoreButton = document.querySelector("#restore-state");
+const inputNode = document.querySelector("#input-state");
+const inputStage = document.querySelector("#input-stage");
+const heldKeys = new Set();
+const heldPointers = new Set();
 
 let score = 0;
 let frameCount = 0;
@@ -55,7 +59,16 @@ function animate(now, generation) {
   frameCount += 1;
   // Local measurement for this starter: input is wired and the opening scene has
   // crossed a frame boundary. This is not a TROY API or generic engine-ready signal.
-  if (frameCount === 2) performance.mark("troy-starter-first-usable");
+  if (frameCount === 2) {
+    performance.mark("troy-starter-first-usable");
+    // Read-only local diagnostics for cold-start acceptance, not a host API.
+    document.body.dataset.firstUsableMs = String(Math.round(performance.now()));
+    const navigation = performance.getEntriesByType?.("navigation") ?? [];
+    const resources = performance.getEntriesByType?.("resource") ?? [];
+    document.body.dataset.startupResources = JSON.stringify([...navigation, ...resources].map(entry => ({
+      url: entry.name, transferBytes: entry.transferSize, bodyBytes: entry.encodedBodySize,
+    })));
+  }
   framesNode.textContent = String(frameCount);
   const progress = ((now - animationStartedAt) % 1800) / 1800;
   const travel = Math.max(0, orbNode.parentElement.clientWidth - 72);
@@ -79,8 +92,40 @@ function pauseAnimation() {
   animationFrame = 0;
 }
 
+function renderInput() {
+  inputNode.textContent = `Held keys ${heldKeys.size} / pointers ${heldPointers.size}`;
+}
+
+function releasePointer(pointerId) {
+  heldPointers.delete(pointerId);
+  try {
+    if (inputStage.hasPointerCapture?.(pointerId)) inputStage.releasePointerCapture(pointerId);
+  } catch { /* A cancelled or detached pointer may already have lost capture. */ }
+  renderInput();
+}
+
 function resetTransientInput() {
-  navigator.vibrate?.(0);
+  heldKeys.clear();
+  for (const pointerId of heldPointers) releasePointer(pointerId);
+  renderInput();
+  try { navigator.vibrate?.(0); } catch { /* Unsupported haptics are non-fatal. */ }
+}
+
+window.addEventListener("keydown", event => {
+  if (!stateRestored || !desiredActive || document.hidden || !event.code.startsWith("Arrow")) return;
+  event.preventDefault();
+  heldKeys.add(event.code);
+  renderInput();
+});
+window.addEventListener("keyup", event => { heldKeys.delete(event.code); renderInput(); });
+inputStage.addEventListener("pointerdown", event => {
+  if (!stateRestored || !desiredActive || document.hidden) return;
+  heldPointers.add(event.pointerId);
+  try { inputStage.setPointerCapture?.(event.pointerId); } catch { /* Optional capture. */ }
+  renderInput();
+});
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+  inputStage.addEventListener(type, event => releasePointer(event.pointerId));
 }
 
 function refreshLayout() {
@@ -245,13 +290,19 @@ incrementButton.addEventListener("click", () => {
 });
 
 soundButton.addEventListener("click", async () => {
-  audioContext ??= new AudioContext();
-  await audioContext.resume();
-  audioEnabled = true;
-  audioNode.textContent = `audio ${audioContext.state}`;
-  soundButton.textContent = "Sound enabled";
-  soundButton.disabled = true;
-  playTapSound();
+  if (!stateRestored || !desiredActive || document.hidden) return;
+  try {
+    audioContext ??= new AudioContext();
+    await audioContext.resume();
+    audioEnabled = true;
+    if (!desiredActive || document.hidden) { await pauseAudio(); return; }
+    audioNode.textContent = `audio ${audioContext.state}`;
+    soundButton.textContent = "Sound enabled";
+    soundButton.disabled = true;
+    playTapSound();
+  } catch {
+    audioNode.textContent = "audio unavailable; retry sound";
+  }
 });
 
 quotaTestButton.addEventListener("click", async () => {

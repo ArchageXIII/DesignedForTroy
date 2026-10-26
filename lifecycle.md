@@ -84,6 +84,14 @@ Persistent progress belongs in the TROY checkpoint. Active fingers, pressed
 buttons, animation timestamps, and device-specific interaction state must not
 be restored.
 
+Keep input sources independent during play: `pointerup`, `pointercancel` and
+lost pointer capture release only the affected pointer; they must not clear a
+still-held keyboard key or another pointer. Key release clears only that key.
+Use the complete reset above for lifecycle inactive, blur and hidden documents.
+The starter exposes held-key/pointer counts for this check. Respect the
+[embedded viewport and browser capability restrictions](assets.md#embedded-play-contract);
+use responsive controls instead of fullscreen or pointer/orientation lock.
+
 ## Resume with a fresh frame
 
 A suspended mobile WebView can discard a pending `requestAnimationFrame`

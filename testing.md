@@ -64,6 +64,46 @@ Run these from `http://127.0.0.1:4173/__troy/`:
 The browser console should have no unhandled rejection or missing-favicon
 noise.
 
+## Embedded-play containment
+
+Run the strict harness and open **Open containment probe** in a separate tab;
+do not reload an active game automatically. Both parent and game responses must
+show `Permissions-Policy: fullscreen=()`. Inspect the iframe's sensor grants,
+`fullscreen 'none'`, and `sandbox="allow-scripts allow-same-origin"`; strict
+HTML/SVG responses also carry the CSP sandbox. Repeat from a freshly extracted
+kit. This checks the supported contract, not complete hostile-code isolation.
+
+- Click Direct fullscreen, Parent fullscreen and Tamper permissions then
+  fullscreen separately, with a fresh trusted gesture each time. All must reject
+  while fullscreen remains absent and host controls remain visible. The probe
+  restores the changed permission attributes even on failure. Do not count an
+  unsupported API, missing policy introspection or activation error as a pass.
+- Click Pointer lock, Orientation lock, Popup, Top navigation, Browser confirm
+  and Browser download. Record exact rejection/console evidence and visible
+  effects. An unsupported orientation API is inconclusive. A null popup result
+  alone can be browser popup blocking; require the sandbox-specific diagnostic.
+  Modal return values and download attempts cannot prove denial from page code:
+  inspect browser diagnostics and downloads, or report inconclusive. Manually
+  test beforeunload suppression in an isolated disposable fixture if needed;
+  this probe does not install a navigation trap. Never infer untested results.
+- After denials, Normal play must increment, Set off-screen must pause input
+  and checkpoint, and Set active must resume without recreation. Also run the
+  real starter's score, frame, restore, audio and complete API checks.
+- Hold an arrow key on the starter stage while pressing/releasing a pointer.
+  The held-key count must survive pointerup/cancel; releasing one pointer must
+  preserve any other pointer, and keyup must preserve pointers. Inactive, blur
+  and hidden-document resets must clear all transient input. Deterministic Node
+  regressions exercise cancellation and concurrent inputs; distinguish those
+  from trusted browser gestures and physical touch tests.
+
+Expected console messages identify denied fullscreen/sandbox operations and
+Chromium may warn about scripts plus same-origin sandbox grants. Uncaught
+rejections, startup failures and lost normal input are unexpected. Report URL,
+auth/fake-player label, visible proof, console messages and inconclusive cases.
+Local harness results do not establish uploaded-preview, capture-worker,
+physical-phone background/rotation behavior or production deployment. Repeat
+the applicable uploaded and device acceptance checks for the changed build.
+
 ## Storage and startup fault matrix
 
 The local host retains **Default storage response** (Immediate, 500 ms,

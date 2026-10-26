@@ -35,6 +35,11 @@ SVG file must be 1,000,000 bytes or smaller. The recommended working target is
 
 ## Complete contract
 
+Games must follow the [embedded-play contract](assets.md#embedded-play-contract):
+stay in the supplied viewport, preserve TROY navigation, and do not request
+fullscreen or bypass host permissions. Browser capability denial must not stop
+startup or gameplay. These requirements do not add or change SDK methods.
+
 ```ts
 type JsonValue =
   | null

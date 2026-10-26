@@ -14,6 +14,15 @@ and keep those details behind a small adapter.
 
 ## Integration boundary
 
+Disable generated fullscreen controls, auto-fullscreen startup hooks, pointer
+lock and orientation lock in the maintained wrapper/export settings. Keep the
+canvas inside the supplied viewport, resize responsively, and declare orientation
+at upload. Do not alter iframe permissions or invoke ancestor APIs. Follow the
+[embedded-play contract](assets.md#embedded-play-contract), including uploaded
+game restrictions on popups, navigation, browser dialogs and downloads. Catch
+unsupported/denied optional API calls without aborting engine boot or gameplay;
+retain permitted sensor support and its fallback controls.
+
 Keep three responsibilities separate:
 
 1. **TROY host state** decides whether the retained iframe is the active game.
@@ -196,7 +205,10 @@ document.addEventListener("pointerdown", (event) => {
   if (!event.isTrusted || !desiredActive || !browserActive) return;
   const context = engineAdapter.getAudioContext();
   if (context?.state === "suspended" || context?.state === "interrupted") {
-    context.resume(); // invoked synchronously inside the trusted handler
+    try {
+      // Invoke synchronously inside the trusted handler; denial is non-fatal.
+      void Promise.resolve(context.resume()).catch(() => {});
+    } catch { /* Retry on a later explicit sound gesture if supported. */ }
   }
 }, { capture: true, passive: true });
 ```
@@ -223,6 +235,10 @@ Prefer the engine's native input-reset or focus-loss hooks. Bridge-level blur,
 pointer-cancel, touch-cancel, and `navigator.vibrate(0)` calls can be useful safety
 nets, but synthetic DOM events are not a universal replacement for clearing the
 engine's internal state.
+
+During ordinary play, pointer up/cancel releases only that pointer, and keyup
+releases only that key. Full input reset belongs to suspension/focus loss;
+test mixed keyboard/pointer input so one release cannot cancel the other.
 
 ## Keep bounded correlated diagnostics
 

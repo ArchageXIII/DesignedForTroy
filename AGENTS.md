@@ -7,6 +7,14 @@ Capture integration is recommended. These requirements cover humans and agents,
 starters and engine adapters, new games, replacements and remixes. SDK import alone
 does not satisfy them. Preserve existing published-game compatibility until replacement.
 
+Follow assets.md's embedded-play contract: keep host navigation visible within
+the supplied viewport. No fullscreen (including ancestors), iframe permission
+tampering or parent-capability bypasses; no pointer/orientation lock, popups,
+top navigation, modal/beforeunload traps or browser downloads in uploaded games.
+Use responsive layout and declared orientation, preserve permitted sensors, and
+handle denied/unsupported optional APIs without aborting play. Pointer release
+must not clear held keys; lifecycle inactive must clear all transient input.
+
 Read README.md, overview.md, lifecycle.md, storage.md, assets.md and testing.md
 before implementation. Read engines.md for engine adapters and remixability.md
 for remixes. Keep opening dependencies small and defer later content. Report
