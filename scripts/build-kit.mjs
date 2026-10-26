@@ -9,11 +9,12 @@ export const payloadFiles = [
   "overview.md", "lifecycle.md", "storage.md", "capture.md", "assets.md",
   "remixability.md", "engines.md", "offline-dev.md", "testing.md", "bundle-policy.json",
   "game/README.md", "game/index.html", "game/game.js", "game/bonus-loader.js",
-  "game/bonus-content.js", "game/bonus-content.json", "tools/troy-dev.mjs",
+  "game/bonus-content.js", "game/bonus-content.json", "tools/troy-dev.mjs", "tools/containment.html",
   "tools/troy-game-api-v1.js", "tools/troy-mcp.mjs", "scripts/build-kit.mjs",
   "scripts/test.mjs", "tests/sdk.test.mjs", "tests/loading.test.mjs",
   "tests/mcp.test.mjs", "tests/kit.test.mjs",
   "tests/lifecycle-storage.test.mjs", "tests/integration-fixture.mjs",
+  "tests/containment.test.mjs",
 ].sort();
 export const sha256 = data => createHash("sha256").update(data).digest("hex");
 export function crc32(data) {

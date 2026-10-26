@@ -29,6 +29,10 @@ Hashes refer to the pinned commit, never to platform-converted working-tree byte
    manifest together with their inputs. User acceptance is required before merge
    or any separately scoped production action.
 
+Use `gh` directly for authorized GitHub PR creation, updates and checks, following
+[the repository GitHub workflow](AGENTS.md). Verify the active CLI account and
+target repository before writes; a connector attempt is not a prerequisite.
+
 The builder explicitly lists public files, sorts their paths, fixes the ZIP DOS
 timestamp to 2026-01-01, stores bytes without compression, and emits no ambient
 filesystem metadata. Uncompressed ZIP is deliberate: it is portable and

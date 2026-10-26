@@ -90,6 +90,36 @@ import { words } from "./dictionary-data.js";
 The CSP is a security boundary and is intentionally stricter than a normal
 local static server. Do not work around it with encoded network requests.
 
+## Embedded-play contract
+
+Games must stay in the supplied viewport and keep TROY navigation available.
+Use responsive layout and declare the game's Best played orientation at upload;
+do not request browser fullscreen on the game or an ancestor document. Do not
+change iframe permissions or invoke parent capabilities to bypass restrictions.
+Uploaded games must not use pointer lock, orientation lock, popups, top-level
+navigation, browser modal dialogs, beforeunload traps, or browser downloads.
+Permitted accelerometer and gyroscope use remains available subject to browser
+support and user permission; provide a usable fallback when unavailable.
+
+The supported host contract denies fullscreen on the application document and
+game responses with `Permissions-Policy: fullscreen=()`. Game iframes use
+`allow="accelerometer; gyroscope; fullscreen 'none'"` and uploaded frames use
+`sandbox="allow-scripts allow-same-origin"`. Uploaded HTML and SVG additionally
+receive CSP `sandbox allow-scripts allow-same-origin`. A child changing an iframe
+attribute cannot relax the ancestor response's fullscreen policy. Internal
+hosted frames may additionally grant `allow-downloads`; that is not an uploaded
+game permission and the upload harness does not grant it.
+
+These grants are not complete hostile-code containment: same-origin scripts can
+access ancestor DOM and capabilities. Do not rely on sandbox attributes as full
+same-origin isolation, or work around a denied capability via the parent.
+Catch synchronous exceptions and rejected promises from supported optional APIs;
+unsupported or denied audio, sensors or haptics must not abort startup or play.
+Remove forbidden engine calls rather than retrying them. Continue lifecycle,
+independent input cleanup, gesture-gated audio and meaningful-state API storage.
+See [containment acceptance](testing.md#embedded-play-containment) for local
+checks and separate uploaded-preview/device evidence requirements.
+
 ## Startup order
 
 Assume lifecycle delivery, resize events, animation frames, capture

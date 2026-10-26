@@ -97,17 +97,41 @@ test("archive paths/CRC/completeness and extracted kit run with spaces and no si
   const cwd = join(folder, "troy-game-dev-kit-v1");
   for (const strict of [false, true]) {
     const url = await start(cwd, strict, context);
-    assert.equal((await fetch(url + "/__troy/")).status, 200);
+    await assertEmbeddedContract(url, strict);
     const sdk = Buffer.from(await (await fetch(url + "/shared/troy-game-api-v1.js")).arrayBuffer());
     assert.deepEqual(sdk, await read("tools/troy-game-api-v1.js"));
   }
 });
 
+async function assertEmbeddedContract(url, strict) {
+  for (const path of ["/__troy/", "/__troy/containment/", "/", "/__troy/containment/index.html"]) {
+    const response = await fetch(url + path);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get("permissions-policy"), "fullscreen=()", path);
+    const head = await fetch(url + path, { method: "HEAD" });
+    assert.equal(head.status, 200, path);
+    assert.equal(head.headers.get("permissions-policy"), "fullscreen=()", path);
+    assert.equal(head.headers.get("content-security-policy"), response.headers.get("content-security-policy"), path);
+    assert.equal(await head.text(), "");
+    if (path.endsWith("/__troy/") || path.endsWith("/containment/")) {
+      const html = await response.text();
+      assert.match(html, /<iframe[^>]*sandbox="allow-scripts allow-same-origin"[^>]*allow="accelerometer; gyroscope; fullscreen 'none'"/);
+      assert.doesNotMatch(html, /allow-downloads|allow-popups|allow-top-navigation|allow-modals|allow-pointer-lock|allow-orientation-lock/);
+      assert.equal(response.headers.get("content-security-policy"), null, "Do not sandbox the parent control page");
+    } else if (strict) {
+      assert.match(response.headers.get("content-security-policy"), /^sandbox allow-scripts allow-same-origin;/);
+    } else {
+      assert.equal(response.headers.get("content-security-policy"), null, "Ordinary mode retains its existing CSP behavior");
+    }
+  }
+  assert.equal((await fetch(url + "/__troy/containment/../../tools/troy-dev.mjs")).status, 404);
+}
+
 test("harness HTTP strict policy, MIME, CSP, traversal and standalone serving", async context => {
   const folder = await mkdtemp(join(tmpdir(), "TROY HTTP test "));
   cleanup(context, folder);
   await mkdir(join(folder, "game")); await mkdir(join(folder, "tools"));
-  for (const path of ["tools/troy-dev.mjs", "tools/troy-game-api-v1.js", "bundle-policy.json", "game/index.html", "game/game.js"]) {
+  for (const path of ["tools/troy-dev.mjs", "tools/containment.html", "tools/troy-game-api-v1.js", "bundle-policy.json", "game/index.html", "game/game.js"]) {
     await copyFile(new URL(path, root), join(folder, path));
   }
   await writeFile(join(folder, "game", "denied.exe"), "denied");
@@ -121,6 +145,7 @@ test("harness HTTP strict policy, MIME, CSP, traversal and standalone serving", 
   await writeFile(join(folder, "outside", "private.txt"), "must not be served");
   await symlink(join(folder, "outside"), join(folder, "game", "escape"), process.platform === "win32" ? "junction" : "dir");
   const strict = await start(folder, true, context);
+  await assertEmbeddedContract(strict, true);
   const page = await fetch(strict + "/");
   assert.equal(page.status, 200); assert.match(page.headers.get("content-security-policy"), /connect-src 'self'/);
   assert.match(page.headers.get("content-security-policy"), /frame-ancestors 'self'/);
@@ -130,11 +155,14 @@ test("harness HTTP strict policy, MIME, CSP, traversal and standalone serving", 
   assert.deepEqual(await (await fetch(strict + "/nested/valid.json")).json(), { valid: true });
   assert.equal((await fetch(strict + "/model.wasm")).headers.get("content-type"), "application/wasm");
   assert.match((await fetch(strict + "/game.js")).headers.get("content-type"), /^application\/javascript/);
-  assert.ok((await fetch(strict + "/test.svg")).headers.get("content-security-policy"));
+  const svg = await fetch(strict + "/test.svg");
+  assert.match(svg.headers.get("content-security-policy"), /^sandbox allow-scripts allow-same-origin;/);
+  assert.equal(svg.headers.get("permissions-policy"), "fullscreen=()");
   assert.equal((await fetch(strict + "/%2e%2e%2fbundle-policy.json")).status, 403);
   assert.equal((await fetch(strict + "/", { method: "POST" })).status, 405);
   assert.equal((await fetch(strict + "/", { method: "HEAD" })).headers.get("x-content-type-options"), "nosniff");
   const ordinary = await start(folder, false, context);
+  await assertEmbeddedContract(ordinary, false);
   assert.equal((await fetch(ordinary + "/denied.exe")).status, 200);
   assert.equal((await fetch(ordinary + "/escape/private.txt")).status, 403);
   assert.equal((await fetch(ordinary + "/")).headers.get("content-security-policy"), null);

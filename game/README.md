@@ -5,6 +5,18 @@
 This is the canonical runnable starter included in
 `troy-game-dev-kit-v1.zip`. It needs Node.js 22 or newer, but no npm install.
 
+Keep it in the supplied viewport under the
+[embedded-play contract](../assets.md#embedded-play-contract). Focus the animation
+stage and hold an arrow key while pressing/releasing a pointer: the visible key
+count must remain held. Pointer cancellation releases only its own pointer;
+Set off-screen clears all keys and pointers. Sound starts only through Enable
+sound; unsupported/denied audio leaves play working and offers another gesture.
+
+At the second playable animation frame, `body.dataset.firstUsableMs` records
+milliseconds since navigation and `body.dataset.startupResources` records local
+resource timing URLs/bytes. These diagnostics exclude later bonus content and
+are local measurements, not a host API or physical-device performance claim.
+
 Abbreviated extracted-kit layout (the full kit also includes MCP, tests, provenance and build scripts):
 
 ```text

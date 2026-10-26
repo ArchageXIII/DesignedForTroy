@@ -7,6 +7,52 @@ const events = run => run.messages.filter(message => message.kind === "lifecycle
 const saves = run => run.messages.filter(message => message.kind === "storage-request" && message.operation === "save");
 const text = (run, id) => run.gameDocument.querySelector(`#${id}`).textContent;
 
+test("pointer release/cancellation preserves held keys; key release preserves other pointers; inactive clears all", async () => {
+  const run = await fixture();
+  await run.tick(250);
+  const stage = run.gameDocument.querySelector("#input-stage");
+  const held = () => text(run, "input-state");
+  run.evaluate('window.dispatchEvent({ type: "keydown", code: "ArrowRight", preventDefault() {} })');
+  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    stage.dispatchEvent({ type: "pointerdown", pointerId: 1 });
+    stage.dispatchEvent({ type: "pointerdown", pointerId: 2 });
+    stage.dispatchEvent({ type, pointerId: 1 });
+    assert.equal(held(), "Held keys 1 / pointers 1", type);
+    stage.dispatchEvent({ type, pointerId: 2 });
+    assert.equal(held(), "Held keys 1 / pointers 0", type);
+  }
+  stage.dispatchEvent({ type: "pointerdown", pointerId: 3 });
+  run.evaluate('window.dispatchEvent({ type: "keyup", code: "ArrowRight" })');
+  assert.equal(held(), "Held keys 0 / pointers 1");
+  run.evaluate('window.dispatchEvent({ type: "keydown", code: "ArrowLeft", preventDefault() {} })');
+  run.evaluate('navigator.vibrate = () => { throw new Error("Haptics unsupported"); }');
+  await run.click("inactive");
+  assert.equal(held(), "Held keys 0 / pointers 0");
+  await run.frame();
+  assert.equal(text(run, "lifecycle"), "inactive");
+  assert.equal(ack(run, events(run).at(-1))?.ok, true);
+  await run.click("active"); await run.tick(250);
+  await run.click("increment", "game"); await run.frame();
+  assert.equal(text(run, "score"), "1");
+  assert.equal(text(run, "frames"), "1");
+  assert.deepEqual(run.errors, []);
+});
+
+test("unsupported and rejected audio are recoverable and cannot abort normal play", async () => {
+  const run = await fixture();
+  await run.tick(250);
+  await run.click("sound", "game"); // fixture deliberately has no AudioContext
+  assert.match(text(run, "audio"), /unavailable/);
+  run.evaluate('window.AudioContext = class { resume() { return Promise.reject(new Error("Denied")); } }');
+  await run.click("sound", "game");
+  assert.match(text(run, "audio"), /unavailable/);
+  await run.click("increment", "game");
+  assert.equal(text(run, "score"), "1");
+  await run.click("inactive");
+  assert.equal(ack(run, events(run).at(-1))?.ok, true);
+  assert.deepEqual(run.errors, []);
+});
+
 test("starter acknowledges initial inactive during pending restore without animation or default saves", async () => {
   const run = await fixture({ initial: "inactive", load: "never", saved: { schemaVersion: 1, score: 7 } });
   await run.tick(250);

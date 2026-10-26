@@ -64,6 +64,46 @@ Run these from `http://127.0.0.1:4173/__troy/`:
 The browser console should have no unhandled rejection or missing-favicon
 noise.
 
+## Embedded-play containment
+
+Run the strict harness and open **Open containment probe** in a separate tab;
+do not reload an active game automatically. Both parent and game responses must
+show `Permissions-Policy: fullscreen=()`. Inspect the iframe's sensor grants,
+`fullscreen 'none'`, and `sandbox="allow-scripts allow-same-origin"`; strict
+HTML/SVG responses also carry the CSP sandbox. Repeat from a freshly extracted
+kit. This checks the supported contract, not complete hostile-code isolation.
+
+- Click Direct fullscreen, Parent fullscreen and Tamper permissions then
+  fullscreen separately, with a fresh trusted gesture each time. All must reject
+  while fullscreen remains absent and host controls remain visible. The probe
+  restores the changed permission attributes even on failure. Do not count an
+  unsupported API, missing policy introspection or activation error as a pass.
+- Click Pointer lock, Orientation lock, Popup, Top navigation, Browser confirm
+  and Browser download. Record exact rejection/console evidence and visible
+  effects. An unsupported orientation API is inconclusive. A null popup result
+  alone can be browser popup blocking; require the sandbox-specific diagnostic.
+  Modal return values and download attempts cannot prove denial from page code:
+  inspect browser diagnostics and downloads, or report inconclusive. Manually
+  test beforeunload suppression in an isolated disposable fixture if needed;
+  this probe does not install a navigation trap. Never infer untested results.
+- After denials, Normal play must increment, Set off-screen must pause input
+  and checkpoint, and Set active must resume without recreation. Also run the
+  real starter's score, frame, restore, audio and complete API checks.
+- Hold an arrow key on the starter stage while pressing/releasing a pointer.
+  The held-key count must survive pointerup/cancel; releasing one pointer must
+  preserve any other pointer, and keyup must preserve pointers. Inactive, blur
+  and hidden-document resets must clear all transient input. Deterministic Node
+  regressions exercise cancellation and concurrent inputs; distinguish those
+  from trusted browser gestures and physical touch tests.
+
+Expected console messages identify denied fullscreen/sandbox operations and
+Chromium may warn about scripts plus same-origin sandbox grants. Uncaught
+rejections, startup failures and lost normal input are unexpected. Report URL,
+auth/fake-player label, visible proof, console messages and inconclusive cases.
+Local harness results do not establish uploaded-preview, capture-worker,
+physical-phone background/rotation behavior or production deployment. Repeat
+the applicable uploaded and device acceptance checks for the changed build.
+
 ## Storage and startup fault matrix
 
 The local host retains **Default storage response** (Immediate, 500 ms,
@@ -153,19 +193,23 @@ line, and column the browser provides. Errors sourced from `troy-dev.mjs`,
 `/__troy/`, `/shared/troy-game-api-v1.js`, or a game file belong to the kit or
 game and should be investigated.
 
-Some extensions, accessibility tools, and browser automation inject scripts
-into the page. Their errors may appear only in DevTools with a blank source,
-an extension URL, or `unknown or injected source`. They are outside the game
-bundle. If an error appears only on the control page and has no source:
+Extensions, accessibility tools and browser automation can inject scripts with
+a blank source, an extension URL or `unknown or injected source`. A missing URL
+or isolated execution context does not establish that an error is harmless.
+Use the approved Browser's supported diagnostics to correlate the exception's
+script and execution context; inspect a bounded source/stack excerpt if available.
+Keep private tooling source and application logs outside the public repository.
 
-1. confirm it is absent from the directly opened game;
-2. retry in a clean browser profile or private window with extensions disabled;
-3. report it as a kit issue only if a local source URL is shown or it reproduces
-   in that clean session.
-
-The runner and SDK do not use `MutationObserver`. A source-less
-`MutationObserver.observe` error that disappears in a clean session is
-injected browser tooling, not a TROY runtime error.
+Compare the directly opened game, a minimal page without scripts, and a minimal
+iframe page. Separate navigation/initialization from later observations and
+interactions. Check input, rendering, lifecycle and affected Browser features;
+record which behavior still works and which remains unverified. A deliberate
+error in a disposable game fixture can verify that genuine page errors still
+reach the iframe console and harness log. Do not suppress errors or change
+browser/security settings to obtain a clean console. Follow the tooling-failure
+policy in [AGENTS.md](AGENTS.md); preserve unresolved ownership or impact when
+the evidence is insufficient. The runner and SDK do not use `MutationObserver`,
+but that fact alone cannot attribute every observer error or validate gameplay.
 
 ## Automatic capture acceptance
 

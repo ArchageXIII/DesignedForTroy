@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Embedded-play containment probe</title>
+  <style>
+    :root { font: 15px system-ui; color-scheme: dark; background: #101d31; color: #f8fbff; }
+    body { margin: 0; padding: 18px; overflow-wrap: anywhere; }
+    button { padding: 10px; margin: 4px 0; width: 100%; font: inherit; touch-action: manipulation; }
+    li { margin-bottom: 10px; } small { color: #bacde5; }
+  </style>
+</head>
+<body>
+  <h1>Containment probe</h1>
+  <p>Deliberately forbidden calls, only on explicit clicks. Keep host controls visible.
+    This fixture is not a game template or proof of hostile-code isolation.</p>
+  <p id="lifecycle">Connecting…</p>
+  <button id="play">Normal play: add point</button>
+  <p id="score">Score 0</p>
+  <button id="direct">Direct fullscreen</button>
+  <button id="parent">Parent fullscreen</button>
+  <button id="tamper">Tamper permissions then fullscreen</button>
+  <button id="pointer">Pointer lock</button>
+  <button id="orientation">Orientation lock</button>
+  <button id="popup">Popup</button>
+  <button id="navigation">Top navigation</button>
+  <button id="modal">Browser confirm</button>
+  <button id="download">Browser download</button>
+  <ol id="results" aria-live="polite"></ol>
+  <small>Popup blocking alone is inconclusive. Downloads, suppressed modals and beforeunload
+    need browser diagnostics/manual observation; no beforeunload trap is installed here.
+    Unsupported calls are inconclusive, never passes.</small>
+  <script type="module">
+    import troy from "/shared/troy-game-api-v1.js";
+    const results = document.querySelector("#results");
+    function report(name, status, detail) {
+      const item = document.createElement("li");
+      item.textContent = `${name}: ${status} — ${detail}`;
+      results.append(item);
+    }
+    let active = false;
+    let restored = false;
+    let score = 0;
+    troy.lifecycle.subscribe(event => {
+      active = event.state === "active";
+      document.querySelector("#lifecycle").textContent = event.state;
+      if (!active && restored) void troy.storage.save({ score }).catch(error => report("Save", "ERROR", error.message));
+    });
+    void troy.ready.then(async connection => {
+      if (!connection.available) active = true;
+      const saved = await troy.storage.load();
+      score = Number.isFinite(saved?.score) ? saved.score : 0;
+      restored = true;
+      document.querySelector("#score").textContent = `Score ${score}`;
+    }).catch(error => report("Restore", "ERROR", error.message));
+    document.querySelector("#play").onclick = () => {
+      if (active && restored) document.querySelector("#score").textContent = `Score ${++score}`;
+    };
+    // Invoke inside the original click before awaiting anything. Each test has
+    // its own gesture, so loss of activation cannot masquerade as policy denial.
+    function bind(id, run) {
+      document.querySelector(`#${id}`).onclick = event => {
+        if (!event.isTrusted || navigator.userActivation?.isActive !== true) {
+          report(id, "INCONCLUSIVE", "A trusted active gesture is required.");
+          return;
+        }
+        try {
+          void Promise.resolve(run()).catch(error => report(id, "INCONCLUSIVE", error.message));
+        } catch (error) { report(id, "INCONCLUSIVE", error.message); }
+      };
+    }
+    async function fullscreen(name, target) {
+      if (typeof target.documentElement.requestFullscreen !== "function") {
+        report(name, "INCONCLUSIVE", "Fullscreen API unsupported."); return;
+      }
+      const policy = target.permissionsPolicy ?? target.featurePolicy;
+      const denied = policy?.allowsFeature("fullscreen") === false;
+      let timer;
+      try {
+        await Promise.race([
+          target.documentElement.requestFullscreen(),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("No result within 1500 ms")), 1500); }),
+        ]);
+        report(name, "FAIL", "Fullscreen request resolved.");
+        if (target.fullscreenElement) await target.exitFullscreen();
+      } catch (error) {
+        const rejected = ["TypeError", "NotAllowedError", "SecurityError"].includes(error.name);
+        report(name, denied && rejected && !target.fullscreenElement ? "PASS" : "INCONCLUSIVE",
+          `${error.name}: ${error.message}; policy denies=${denied}; fullscreen=${Boolean(target.fullscreenElement)}`);
+      } finally { clearTimeout(timer); }
+    }
+    bind("direct", () => fullscreen("Direct fullscreen", document));
+    bind("parent", () => fullscreen("Parent fullscreen", parent.document));
+    bind("tamper", async () => {
+      const frame = window.frameElement;
+      if (!frame) { report("Tampering", "INCONCLUSIVE", "No accessible frame element."); return; }
+      const allow = frame.getAttribute("allow");
+      const legacy = frame.getAttribute("allowfullscreen");
+      try {
+        frame.setAttribute("allow", "accelerometer; gyroscope; fullscreen *");
+        frame.setAttribute("allowfullscreen", "");
+        await fullscreen("Tampered child fullscreen", document);
+        // A separate click is required to test the ancestor with fresh activation.
+      } finally {
+        for (const [name, value] of [["allow", allow], ["allowfullscreen", legacy]]) {
+          if (value === null) frame.removeAttribute(name); else frame.setAttribute(name, value);
+        }
+      }
+    });
+    bind("pointer", async () => {
+      if (typeof document.body.requestPointerLock !== "function") { report("Pointer lock", "INCONCLUSIVE", "API unsupported."); return; }
+      try {
+        const result = document.body.requestPointerLock();
+        if (!result?.then) { report("Pointer lock", "INCONCLUSIVE", "No promise; inspect pointerlockerror and console."); return; }
+        await result;
+        report("Pointer lock", "FAIL", "Request resolved.");
+        document.exitPointerLock();
+      } catch (error) { report("Pointer lock", error.name === "SecurityError" ? "PASS" : "INCONCLUSIVE", `${error.name}: ${error.message}`); }
+    });
+    bind("orientation", async () => {
+      if (!screen.orientation?.lock) { report("Orientation lock", "INCONCLUSIVE", "API unsupported."); return; }
+      try {
+        await screen.orientation.lock("landscape");
+        report("Orientation lock", "FAIL", "Request resolved."); screen.orientation.unlock();
+      } catch (error) { report("Orientation lock", error.name === "SecurityError" ? "PASS" : "INCONCLUSIVE", `${error.name}: ${error.message}`); }
+    });
+    bind("popup", () => {
+      const popup = window.open("about:blank", "_blank");
+      report("Popup", popup ? "FAIL" : "INCONCLUSIVE", popup ? "Window opened." : "Null result: distinguish sandbox denial from browser popup blocking in console.");
+      popup?.close();
+    });
+    bind("navigation", () => {
+      try { top.location.href = `${location.origin}/__troy/containment/#navigation-escaped`; report("Top navigation", "FAIL", "Assignment accepted; inspect parent URL."); }
+      catch (error) { report("Top navigation", error.name === "SecurityError" ? "PASS" : "INCONCLUSIVE", `${error.name}: ${error.message}`); }
+    });
+    bind("modal", () => {
+      const result = window.confirm("Containment test: this browser modal should be suppressed.");
+      report("Browser confirm", result ? "FAIL" : "INCONCLUSIVE", "False also means dismissal; inspect sandbox console diagnostic.");
+    });
+    bind("download", () => {
+      const link = document.createElement("a");
+      link.href = "data:text/plain,local%20containment%20probe";
+      link.download = "troy-containment-probe.txt";
+      link.click();
+      report("Browser download", "INCONCLUSIVE", "No page API observes denial; inspect browser downloads and sandbox console diagnostic.");
+    });
+  </script>
+</body>
+</html>
